@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from llmclone import utils
+from llmclone.structs import Task
 
 
 @pytest.fixture(scope="module", name="domain_str")
@@ -88,6 +89,30 @@ def _create_problem_str():
     return problem_str
 
 
+@pytest.fixture(scope="module", name="impossible_problem_str")
+def _create_impossible_problem_str():
+    problem_str = """(define (problem blocks)
+    (:domain blocks)
+    (:objects
+        d - block
+        b - block
+        a - block
+        c - block
+    )
+    (:init
+        (clear c)
+        (clear b)
+        (clear d)
+        (ontable c)
+        (ontable d)
+        (handempty)
+    )
+    (:goal (and (holding a)))
+)
+"""
+    return problem_str
+
+
 @patch('urllib.request.urlopen')
 def test_get_pddl_from_url(mocked_urlopen, domain_str, problem_str):
     """Tests for get_pddl_from_url()."""
@@ -130,3 +155,23 @@ def test_get_pddl_from_url(mocked_urlopen, domain_str, problem_str):
         with pytest.raises(ValueError) as e:
             utils.get_pddl_from_url(url, cache_dir)
         assert f"PDDL file not found at {url}" in str(e)
+
+
+def test_run_planning(domain_str, problem_str, impossible_problem_str):
+    """Tests for run_planning().
+
+    Fast downward is not tested because it's not easy to install on the
+    github checks server.
+    """
+    # Test planning successfully.
+    task = Task(domain_str, problem_str)
+    plan, _ = utils.run_planning(task)
+    assert plan is not None
+    # Test planning in an impossible problem.
+    impossible_task = Task(domain_str, impossible_problem_str)
+    plan, _ = utils.run_planning(impossible_task)
+    assert plan is None
+    # Test planning with an invalid planner.
+    with pytest.raises(NotImplementedError) as e:
+        utils.run_planning(task, planner="not a real planner")
+    assert "Unrecognized planner" in str(e)

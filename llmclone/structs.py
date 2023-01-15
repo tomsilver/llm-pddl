@@ -1,7 +1,10 @@
 """Data structures."""
 
+import tempfile
 from dataclasses import dataclass
 from functools import cached_property
+from pathlib import Path
+from typing import Any, Dict, List
 
 from pyperplan.pddl.parser import Parser
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
@@ -17,24 +20,47 @@ class Task:
     problem_str: str
 
     @cached_property
+    def domain_file(self) -> Path:
+        """A file that contains the domain str."""
+        filename = tempfile.NamedTemporaryFile(delete=False).name
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(self.domain_str)
+        return Path(filename)
+
+    @cached_property
+    def problem_file(self) -> Path:
+        """A file that contains the problem str."""
+        filename = tempfile.NamedTemporaryFile(delete=False).name
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(self.problem_str)
+        return Path(filename)
+
+    @cached_property
     def _parser(self) -> Parser:
-        parser = Parser(None)
-        parser.domInput = self.domain_str
-        parser.probInput = self.problem_str
-        return parser
+        return Parser(self.domain_file, self.problem_file)
 
     @cached_property
     def domain(self) -> PyperplanDomain:
         """The parsed PDDL domain for this task."""
-        return self._parser.parse_domain(read_from_file=False)
+        return self._parser.parse_domain()
 
     @cached_property
     def problem(self) -> PyperplanProblem:
         """The parsed PDDL problem for this task."""
-        return self._parser.parse_problem(self.domain, read_from_file=False)
+        return self._parser.parse_problem(self.domain)
 
     @cached_property
     def size(self) -> int:
         """A crude measure of task complexity."""
         prob = self.problem
         return len(prob.objects) + len(prob.initial_state) + len(prob.goal)
+
+
+# A plan is currently just a list of strings, where each string is one ground
+# operator, e.g., (unstack a b). We may change this later.
+Plan = List[str]
+
+# Metrics are saved during evaluation.
+TaskMetrics = Dict[str, Any]
+# Maps a task string identifier to task metrics.
+Metrics = Dict[str, TaskMetrics]

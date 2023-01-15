@@ -3,10 +3,17 @@
 import functools
 import logging
 import os
+import re
 import subprocess
+import tempfile
 import urllib.request
 from datetime import date
 from pathlib import Path
+from typing import Optional, Tuple
+
+from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
+
+from llmclone.structs import Plan, Task, TaskMetrics
 
 _DIR = Path(__file__).parent
 PDDL_DIR = _DIR / "envs" / "assets" / "pddl"
@@ -49,3 +56,100 @@ def get_pddl_from_url(url: str, cache_dir: Path = PDDL_DIR) -> str:
     with open(file_path, "r", encoding="utf-8") as f:
         pddl = f.read()
     return pddl
+
+
+def run_planning(
+        task: Task,
+        planner: str = "pyperplan") -> Tuple[Optional[Plan], TaskMetrics]:
+    """Find a plan."""
+    if planner == "pyperplan":
+        return run_pyperplan_planning(task)
+    if planner == "fastdownward":  # pragma: no cover
+        return run_fastdownward_planning(task)
+    if planner == "fastdownward-hff-gbfs":  # pragma: no cover
+        return run_fastdownward_planning(task,
+                                         alias=None,
+                                         search="eager_greedy([ff()])")
+    raise NotImplementedError(f"Unrecognized planner: {planner}")
+
+
+def run_pyperplan_planning(
+    task: Task,
+    heuristic: str = "hff",
+    search: str = "gbf",
+) -> Tuple[Optional[Plan], TaskMetrics]:
+    """Find a plan with pyperplan."""
+    search_fn = SEARCHES[search]
+    heuristic_fn = HEURISTICS[heuristic]
+    # Quiet the pyperplan logging.
+    logging.disable(logging.ERROR)
+    pyperplan_plan = search_plan(
+        task.domain_file,
+        task.problem_file,
+        search_fn,
+        heuristic_fn,
+    )
+    logging.disable(logging.NOTSET)
+    metrics: TaskMetrics = {
+    }  # currently not collecting metrics from pyperplan
+    if pyperplan_plan is None:
+        return None, metrics
+    return [a.name for a in pyperplan_plan], metrics
+
+
+def run_fastdownward_planning(
+    task: Task,
+    alias: Optional[str] = "lama-first",
+    search: Optional[str] = None,
+) -> Tuple[Optional[Plan], TaskMetrics]:  # pragma: no cover
+    """Find a plan with fast downward.
+
+    Usage: Build and compile the Fast Downward planner, then set the environment
+    variable FD_EXEC_PATH to point to the `downward` directory. For example:
+    1) git clone https://github.com/aibasel/downward.git
+    2) cd downward && ./build.py
+    3) export FD_EXEC_PATH="<your absolute path here>/downward"
+    """
+    # Specify either a search flag or an alias.
+    assert (search is None) + (alias is None) == 1
+    # The SAS file isn't actually used, but it's important that we give it a
+    # name, because otherwise Fast Downward uses a fixed default name, which
+    # will cause issues if you run multiple processes simultaneously.
+    sas_file = tempfile.NamedTemporaryFile(delete=False).name
+    # Run Fast Downward followed by cleanup. Capture the output.
+    assert "FD_EXEC_PATH" in os.environ, \
+        "Please follow the instructions in the docstring of this method!"
+    if alias is not None:
+        alias_flag = f"--alias {alias}"
+    else:
+        alias_flag = ""
+    if search is not None:
+        search_flag = f"--search '{search}'"
+    else:
+        search_flag = ""
+    fd_exec_path = os.environ["FD_EXEC_PATH"]
+    exec_str = os.path.join(fd_exec_path, "fast-downward.py")
+    cmd_str = (f'"{exec_str}" {alias_flag} '
+               f'--sas-file {sas_file} '
+               f'"{task.domain_file}" "{task.problem_file}" '
+               f'{search_flag}')
+    output = subprocess.getoutput(cmd_str)
+    cleanup_cmd_str = f"{exec_str} --cleanup"
+    subprocess.getoutput(cleanup_cmd_str)
+    # Parse and log metrics.
+    num_nodes_expanded = re.findall(r"Expanded (\d+) state", output)[0]
+    num_nodes_created = re.findall(r"Evaluated (\d+) state", output)[0]
+    metrics = {
+        "nodes_expanded": float(num_nodes_expanded),
+        "nodes_created": float(num_nodes_created)
+    }
+    # Extract the plan from the output, if one exists.
+    if "Solution found!" not in output:
+        return None, metrics
+    if "Plan length: 0 step" in output:
+        # Handle the special case where the plan is found to be trivial.
+        return [], metrics
+    plan_str = re.findall(r"(.+) \(\d+?\)", output)
+    assert plan_str  # already handled empty plan case, so something went wrong
+    plan = [f"({a})" for a in plan_str]
+    return plan, metrics

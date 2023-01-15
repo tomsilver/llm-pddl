@@ -3,10 +3,12 @@
 import logging
 import sys
 import time
+from typing import List, Tuple
 
 from llmclone import utils
 from llmclone.envs import create_tasks
 from llmclone.flags import FLAGS, parse_flags
+from llmclone.structs import Plan, Task
 
 
 def _main() -> None:
@@ -33,9 +35,15 @@ def _main() -> None:
     )
 
     # Will use these in a forthcoming PR.
-    del prompt_tasks, train_tasks, eval_tasks
+    del train_tasks, eval_tasks
 
     # Create example plans for prompting.
+    prompt_demos: List[Tuple[Task, Plan]] = []
+    for task in prompt_tasks:
+        plan, _ = utils.run_planning(task, planner=FLAGS.planner)
+        assert plan is not None, "Planning failed"
+        demo = (task, plan)
+        prompt_demos.append(demo)
 
     # Get train and eval plans from LLM.
 
