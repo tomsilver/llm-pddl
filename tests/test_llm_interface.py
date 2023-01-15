@@ -162,7 +162,8 @@ def test_openai_llm():
     assert llm_response.prompt_info["stop_token"] == stop_token
 
 
-def test_llm_planning():
+@pytest.mark.parametrize("env_name", ["pyperplan-blocks", "pyperplan-miconic"])
+def test_llm_planning(env_name):
     """Tests LLM planning."""
     cache_dir = "_fake_llm_cache_dir"
     utils.reset_flags({
@@ -171,7 +172,7 @@ def test_llm_planning():
         "llm_use_cache_only": False,
     })
     llm = _MockLLM()
-    tasks, _, _ = create_tasks("pyperplan-blocks", 1, 0, 0)
+    tasks, _, _ = create_tasks(env_name, 1, 0, 0)
     task = tasks[0]
     ideal_plan, _ = utils.run_planning(task)
     llm.responses = ["\n".join(ideal_plan)]
@@ -194,7 +195,7 @@ def test_llm_planning_failure_cases():
     ideal_response = "\n".join(ideal_plan)
 
     # Test general approach failure.
-    llm.responses = ["garbage"]
+    llm.responses = ["garbage Q:"]
     plan = run_llm_planning(task, llm, [(task, ideal_plan)])
     assert not plan
 

@@ -217,7 +217,7 @@ def _create_single_prompt(task: Task, plan: Optional[Plan] = None) -> str:
         obj_type = task.problem.objects[obj]
         type_to_objs[obj_type].append(obj)
     # Include constants too.
-    for obj in sorted(task.domain.constants):
+    for obj in sorted(task.domain.constants):  # pragma: no cover
         obj_type = task.domain.constants[obj]
         type_to_objs[obj_type].append(obj)
     # Construct the object list for the prompt.
