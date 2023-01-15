@@ -1,7 +1,6 @@
 """Create PDDL prompting, training, and evaluation tasks."""
 
 import logging
-from pathlib import Path
 from typing import List, Tuple
 
 from llmclone import utils
@@ -20,6 +19,9 @@ def create_tasks(
     if env_name.startswith("pyperplan-"):
         benchmark_name = env_name[len("pyperplan-"):]
         tasks = _get_pyperplan_tasks(benchmark_name, total_num_tasks)
+
+    else:
+        raise NotImplementedError(f"Unrecognized env: {env_name}.")
 
     # Sort from smallest to largest.
     sorted_tasks = sorted(tasks, key=lambda t: t.size)

@@ -99,7 +99,7 @@ def test_get_pddl_from_url(mocked_urlopen, domain_str, problem_str):
     cm.__enter__.return_value = cm
     mocked_urlopen.return_value = cm
     url = "https://not-a-real-pddl-repository.com/domain.pddl"
-    expected_str = f"; Downloaded {today} from {url}\n" + domain_str
+    expected_str = f"; Downloaded {today} from {url}\n" + domain_str.lower()
     with tempfile.TemporaryDirectory() as td:
         cache_dir = Path(td)
         # Test getting a new domain file.
@@ -112,7 +112,7 @@ def test_get_pddl_from_url(mocked_urlopen, domain_str, problem_str):
     # Test getting problem files.
     cm.read.return_value = problem_str.encode()
     url = "https://not-a-real-pddl-repository.com/problem.pddl"
-    expected_str = f"; Downloaded {today} from {url}\n" + problem_str
+    expected_str = f"; Downloaded {today} from {url}\n" + problem_str.lower()
     with tempfile.TemporaryDirectory() as td:
         cache_dir = Path(td)
         # Test getting a new problem file.
