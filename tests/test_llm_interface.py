@@ -13,6 +13,8 @@ from llmclone.structs import LLMResponse
 
 
 class _ParrotLLM(LargeLanguageModel):
+    """LLM that repeats the prompt, roughly."""
+
     def get_id(self):
         return "dummy"
 
@@ -42,6 +44,8 @@ class _ParrotLLM(LargeLanguageModel):
 
 
 class _MockLLM(LargeLanguageModel):
+    """LLM with settable responses."""
+
     def __init__(self):
         self.responses = []
 
