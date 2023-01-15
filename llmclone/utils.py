@@ -32,8 +32,11 @@ def get_pddl_from_url(url: str, cache_dir: Path = PDDL_DIR) -> str:
     # Download if doesn't already exist.
     if not os.path.exists(file_path):
         logging.info(f"Cache not found for {url}, downloading.")
-        with urllib.request.urlopen(url) as f:
-            pddl = f.read().decode('utf-8')
+        try:
+            with urllib.request.urlopen(url) as f:
+                pddl = f.read().decode('utf-8').lower()
+        except urllib.error.HTTPError:
+            raise ValueError(f"PDDL file not found at {url}.")
         if "(:action" not in pddl and "(:init" not in pddl:
             raise ValueError(f"PDDL file not found at {url}.")
         # Add a note at the top of the file about when this was downloaded.
