@@ -19,6 +19,11 @@ def test_create_tasks():
     assert len(train_tasks) == 2
     assert len(eval_tasks) == 3
 
+    # Test case where we ask for too many tasks.
+    with pytest.raises(ValueError) as e:
+        create_tasks("pyperplan-blocks", 1000, 1, 1)
+    assert "Too many tasks" in str(e)
+
     # Test unknown task creation.
     with pytest.raises(NotImplementedError) as e:
         create_tasks("not a real env", 1, 1, 1)

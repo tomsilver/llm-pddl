@@ -1,6 +1,5 @@
 """Create PDDL prompting, training, and evaluation tasks."""
 
-import logging
 from typing import List, Tuple
 
 from llmclone import utils
@@ -48,8 +47,9 @@ def _get_pyperplan_tasks(benchmark_name: str, num_tasks: int) -> List[Task]:
         try:
             problem_str = utils.get_pddl_from_url(problem_url)
         except ValueError as e:
-            logging.error(f"Could not download {problem_url}. Too many tasks?")
-            raise e
+            assert "PDDL file not found" in str(e)
+            raise ValueError(f"Could not download {problem_url}. "
+                             "Too many tasks?")
         task = Task(domain_str, problem_str)
         tasks.append(task)
     return tasks
