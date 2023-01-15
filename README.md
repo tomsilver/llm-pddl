@@ -1,5 +1,7 @@
 # LLM Behavioral Cloning
 
+![workflow](https://github.com/tomsilver/llm-pddl/actions/workflows/llmclone.yml/badge.svg)
+
 Under development.
 
 ## Requirements
