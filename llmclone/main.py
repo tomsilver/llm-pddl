@@ -31,7 +31,8 @@ def _main() -> None:
         num_train=FLAGS.num_train_tasks,
         num_eval=FLAGS.num_eval_tasks,
     )
-    import ipdb; ipdb.set_trace()
+    import ipdb
+    ipdb.set_trace()
 
     # Will use these in a forthcoming PR.
     del prompt_tasks, train_tasks, eval_tasks

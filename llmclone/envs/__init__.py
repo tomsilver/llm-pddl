@@ -4,8 +4,8 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
-from llmclone.structs import Task
 from llmclone import utils
+from llmclone.structs import Task
 
 
 def create_tasks(
@@ -27,7 +27,7 @@ def create_tasks(
     prompt_tasks = sorted_tasks[:num_prompt]
     train_tasks = sorted_tasks[num_prompt:(num_prompt + num_train)]
     eval_tasks = sorted_tasks[(num_prompt + num_train):]
-    assert len(eval_tasks) == num_eval_tasks
+    assert len(eval_tasks) == num_eval
 
     return prompt_tasks, train_tasks, eval_tasks
 
