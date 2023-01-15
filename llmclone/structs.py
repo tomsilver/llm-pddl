@@ -8,7 +8,11 @@ from typing import Any, Dict, List
 
 from pyperplan.pddl.parser import Parser
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
+from pyperplan.pddl.pddl import \
+    Predicate as PyperplanPredicate  # pylint: disable=unused-import
 from pyperplan.pddl.pddl import Problem as PyperplanProblem
+from pyperplan.pddl.pddl import \
+    Type as PyperplanType  # pylint: disable=unused-import
 
 PyperplanObject = str
 
@@ -64,3 +68,14 @@ Plan = List[str]
 TaskMetrics = Dict[str, Any]
 # Maps a task string identifier to task metrics.
 Metrics = Dict[str, TaskMetrics]
+
+
+@dataclass(frozen=True)
+class LLMResponse:
+    """A single response from a LargeLanguageModel."""
+    prompt_text: str
+    response_text: str
+    tokens: List[str]
+    token_logprobs: List[float]
+    prompt_info: Dict
+    other_info: Dict

@@ -1,6 +1,7 @@
 """Utilities."""
 
 import functools
+import hashlib
 import logging
 import os
 import re
@@ -9,12 +10,17 @@ import tempfile
 import urllib.request
 from datetime import date
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
 
-from llmclone.structs import Plan, Task, TaskMetrics
+from llmclone.flags import FLAGS
+from llmclone.structs import Plan, PyperplanPredicate, PyperplanType, Task, \
+    TaskMetrics
 
+# Global constants.
+LLM_QUESTION_TOKEN = "Q:"
+LLM_ANSWER_TOKEN = "A:"
 _DIR = Path(__file__).parent
 PDDL_DIR = _DIR / "envs" / "assets" / "pddl"
 
@@ -153,3 +159,59 @@ def run_fastdownward_planning(
     assert plan_str  # already handled empty plan case, so something went wrong
     plan = [f"({a})" for a in plan_str]
     return plan, metrics
+
+
+def pred_to_str(pred: PyperplanPredicate) -> str:
+    """Create a string representation of a Pyperplan predicate (atom)."""
+    if not pred.signature:
+        return f"({pred.name})"
+    arg_str = " ".join(str(o) for o, _ in pred.signature)
+    return f"({pred.name} {arg_str})"
+
+
+def get_init_str(task: Task) -> str:
+    """Returns the init string of a PDDL task."""
+    init_strs = [pred_to_str(p) for p in task.problem.initial_state]
+    init_str = "\n".join(init_strs)
+    return init_str
+
+
+def get_goal_str(task: Task) -> str:
+    """Returns the goal string of a PDDL task."""
+    goal_strs = [pred_to_str(p) for p in task.problem.goal]
+    goal_str = "\n".join(goal_strs)
+    return goal_str
+
+
+def str_to_identifier(x: str) -> str:
+    """Convert a string to a small string with negligible collision probability
+    and where the smaller string can be used to identifier the larger string in
+    file names.
+
+    Importantly, this function is deterministic between runs and between
+    platforms, unlike python's built-in hash function.
+    References:
+        https://stackoverflow.com/questions/45015180
+        https://stackoverflow.com/questions/5297448
+    """
+    return hashlib.md5(x.encode('utf-8')).hexdigest()
+
+
+def is_subtype(type1: PyperplanType, type2: PyperplanType) -> bool:
+    """Checks whether type1 inherits from type2."""
+    while type1 is not None:
+        if type1 == type2:
+            return True
+        type1 = type1.parent
+    return False
+
+
+def reset_flags(args: Dict[str, Any], default_seed: int = 123) -> None:
+    """Resets FLAGS for use in unit tests.
+
+    Unless seed is specified, we use a default for testing.
+    """
+    FLAGS.__dict__.clear()
+    FLAGS.__dict__.update(args)
+    if "seed" not in FLAGS:
+        FLAGS.__dict__["seed"] = default_seed
