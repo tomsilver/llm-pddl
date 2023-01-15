@@ -13,6 +13,7 @@ from llmclone.structs import LLMResponse, Task
 
 
 class _ParrotLLM(LargeLanguageModel):
+
     def get_id(self):
         return "dummy"
 
@@ -42,6 +43,7 @@ class _ParrotLLM(LargeLanguageModel):
 
 
 class _MockLLM(LargeLanguageModel):
+
     def __init__(self):
         self.responses = []
 
