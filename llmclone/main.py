@@ -8,6 +8,7 @@ from typing import List, Tuple
 from llmclone import utils
 from llmclone.envs import create_tasks
 from llmclone.flags import FLAGS, parse_flags
+from llmclone.llm_interface import OpenAILLM, run_llm_planning
 from llmclone.structs import Plan, Task
 
 
@@ -34,9 +35,6 @@ def _main() -> None:
         num_eval=FLAGS.num_eval_tasks,
     )
 
-    # Will use these in a forthcoming PR.
-    del train_tasks, eval_tasks
-
     # Create example plans for prompting.
     prompt_demos: List[Tuple[Task, Plan]] = []
     for task in prompt_tasks:
@@ -46,6 +44,15 @@ def _main() -> None:
         prompt_demos.append(demo)
 
     # Get train and eval plans from LLM.
+    llm = OpenAILLM(FLAGS.llm_model_name)
+    train_demos: List[Tuple[Task, Plan]] = []
+    eval_demos: List[Tuple[Task, Plan]] = []
+    for task_list, demo_list in [(train_tasks, train_demos),
+                                 (eval_tasks, eval_demos)]:
+        plan = run_llm_planning(task, llm, prompt_demos)
+        assert plan is not None, "LLM planning produced nothing"
+        demo = (task, plan)
+        demo_list.append(demo)
 
     # Use the LLM train plans to learn a policy by behavioral cloning.
 
