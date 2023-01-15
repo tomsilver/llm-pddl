@@ -10,10 +10,11 @@ import tempfile
 import urllib.request
 from datetime import date
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
 
+from llmclone.flags import FLAGS
 from llmclone.structs import Plan, PyperplanPredicate, PyperplanType, Task, \
     TaskMetrics
 
@@ -203,3 +204,14 @@ def is_subtype(type1: PyperplanType, type2: PyperplanType) -> bool:
             return True
         type1 = type1.parent
     return False
+
+
+def reset_flags(args: Dict[str, Any], default_seed: int = 123) -> None:
+    """Resets FLAGS for use in unit tests.
+
+    Unless seed is specified, we use a default for testing.
+    """
+    FLAGS.__dict__.clear()
+    FLAGS.__dict__.update(args)
+    if "seed" not in FLAGS:
+        FLAGS.__dict__["seed"] = default_seed

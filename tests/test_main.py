@@ -16,7 +16,6 @@ from llmclone.main import _main  # pylint: disable=wrong-import-position
 
 def test_main():
     """Tests for main.py."""
-
     sys.argv = [
         "dummy", "--env", "pyperplan-blocks", "--seed", "123",
         "--num_prompt_tasks", "1", "--num_train_tasks", "1",
