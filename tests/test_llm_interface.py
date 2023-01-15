@@ -9,11 +9,10 @@ from llmclone import utils
 from llmclone.envs import create_tasks
 from llmclone.llm_interface import LargeLanguageModel, OpenAILLM, \
     _llm_response_to_plan, run_llm_planning
-from llmclone.structs import LLMResponse, Task
+from llmclone.structs import LLMResponse
 
 
 class _ParrotLLM(LargeLanguageModel):
-
     def get_id(self):
         return "dummy"
 
@@ -43,7 +42,6 @@ class _ParrotLLM(LargeLanguageModel):
 
 
 class _MockLLM(LargeLanguageModel):
-
     def __init__(self):
         self.responses = []
 
@@ -193,7 +191,7 @@ def test_llm_planning_failure_cases():
     llm = _MockLLM()
     tasks, _, _ = create_tasks("pyperplan-elevators", 1, 0, 0)
     task = tasks[0]
-    ideal_plan, _ = utils.run_planning(task)
+    ideal_plan = ['(move-up-fast fast0 n0 n8)', '(board p2 slow0-0 n2 n0 n1)', '(board p0 fast0 n8 n0 n1)', '(move-up-slow slow0-0 n2 n4)', '(move-down-fast fast0 n8 n4)', '(move-down-slow slow0-0 n4 n3)', '(board p1 slow0-0 n3 n1 n2)', '(move-up-slow slow0-0 n3 n4)', '(leave p1 slow0-0 n4 n2 n1)', '(move-down-slow slow0-0 n4 n1)', '(board p1 fast0 n4 n1 n2)', '(leave p2 slow0-0 n1 n1 n0)', '(leave p0 fast0 n4 n2 n1)', '(move-up-fast fast0 n4 n6)', '(leave p1 fast0 n6 n1 n0)']  # pylint: disable=line-too-long
     ideal_response = "\n".join(ideal_plan)
 
     # Test general approach failure.
