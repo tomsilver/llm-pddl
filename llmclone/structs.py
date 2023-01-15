@@ -4,12 +4,8 @@ from dataclasses import dataclass
 from functools import cached_property
 
 from pyperplan.pddl.parser import Parser
-from pyperplan.pddl.pddl import Action as PyperplanAction
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
-from pyperplan.pddl.pddl import Predicate as PyperplanPredicate
 from pyperplan.pddl.pddl import Problem as PyperplanProblem
-from pyperplan.pddl.pddl import Type as PyperplanType
-from pyperplan.task import Task as PyperplanTask
 
 PyperplanObject = str
 
