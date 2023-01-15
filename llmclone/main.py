@@ -5,7 +5,6 @@ import sys
 import time
 
 from llmclone import utils
-from llmclone.envs import create_tasks
 from llmclone.flags import FLAGS, parse_flags
 
 
@@ -25,15 +24,6 @@ def _main() -> None:
     logging.info(f"Git commit hash: {utils.get_git_commit_hash()}")
 
     # There are three sets of planning tasks: prompting, train, and eval.
-    prompt_tasks, train_tasks, eval_tasks = create_tasks(
-        env_name=FLAGS.env,
-        num_prompt=FLAGS.num_prompt_tasks,
-        num_train=FLAGS.num_train_tasks,
-        num_eval=FLAGS.num_eval_tasks,
-    )
-
-    # Will use these in a forthcoming PR.
-    del prompt_tasks, train_tasks, eval_tasks
 
     # Create example plans for prompting.
 
