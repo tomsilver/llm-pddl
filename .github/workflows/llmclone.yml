@@ -39,7 +39,6 @@ jobs:
       run: |
         pip install -e .
         pip install mypy
-        pip install -e llmclone/third_party/pyperplan
     - name: Mypy
       run: |
         mypy .
@@ -60,7 +59,6 @@ jobs:
       run: |
         pip install -e .
         pip install pytest-pylint
-        pip install -e llmclone/third_party/pyperplan
     - name: Pylint
       run: |
         pytest . --pylint -m pylint --pylint-rcfile=.llmclone_pylintrc
