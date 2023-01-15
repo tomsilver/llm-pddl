@@ -49,10 +49,11 @@ def _main() -> None:
     eval_demos: List[Tuple[Task, Plan]] = []
     for task_list, demo_list in [(train_tasks, train_demos),
                                  (eval_tasks, eval_demos)]:
-        plan = run_llm_planning(task, llm, prompt_demos)
-        assert plan is not None, "LLM planning produced nothing"
-        demo = (task, plan)
-        demo_list.append(demo)
+        for task in task_list:
+            plan = run_llm_planning(task, llm, prompt_demos)
+            assert plan is not None, "LLM planning produced nothing"
+            demo = (task, plan)
+            demo_list.append(demo)
 
     # Use the LLM train plans to learn a policy by behavioral cloning.
 

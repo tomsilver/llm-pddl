@@ -8,9 +8,11 @@ from typing import Any, Dict, List
 
 from pyperplan.pddl.parser import Parser
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
-from pyperplan.pddl.pddl import Predicate as PyperplanPredicate
+from pyperplan.pddl.pddl import \
+    Predicate as PyperplanPredicate  # pylint: disable=unused-import
 from pyperplan.pddl.pddl import Problem as PyperplanProblem
-from pyperplan.pddl.pddl import Type as PyperplanType
+from pyperplan.pddl.pddl import \
+    Type as PyperplanType  # pylint: disable=unused-import
 
 PyperplanObject = str
 

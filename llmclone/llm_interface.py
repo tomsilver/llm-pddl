@@ -14,7 +14,7 @@ from transformers import GPT2TokenizerFast
 from llmclone import utils
 from llmclone.flags import FLAGS
 from llmclone.structs import LLMResponse, Plan, PyperplanObject, \
-    PyperplanType, Task, TaskMetrics
+    PyperplanType, Task
 
 # Turn off a warning about parallelism.
 # See https://stackoverflow.com/questions/62691279

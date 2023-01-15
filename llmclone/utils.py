@@ -10,7 +10,7 @@ import tempfile
 import urllib.request
 from datetime import date
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
 
