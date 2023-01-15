@@ -177,7 +177,7 @@ class OpenAILLM(LargeLanguageModel):
 
 
 def run_llm_planning(task: Task, llm: LargeLanguageModel,
-                     prompt_demos: List[Tuple[Task, Plan]]) -> Optional[Plan]:
+                     prompt_demos: List[Tuple[Task, Plan]]) -> Plan:
     """Use few-shot prompting of an LLM to plan."""
     # Create the prompt prefix from the demos.
     prompt_prefix = _create_llm_planning_prompt_prefix(prompt_demos)
@@ -190,8 +190,6 @@ def run_llm_planning(task: Task, llm: LargeLanguageModel,
                                        temperature=0.0,
                                        seed=FLAGS.seed,
                                        stop_token=utils.LLM_QUESTION_TOKEN)
-    if not responses:
-        return None
     assert len(responses) == 1
     response = responses[0]
     response_text = response.response_text

@@ -6,87 +6,10 @@ import shutil
 import pytest
 
 from llmclone import utils
+from llmclone.envs import create_tasks
 from llmclone.llm_interface import LargeLanguageModel, OpenAILLM, \
     _llm_response_to_plan, run_llm_planning
 from llmclone.structs import LLMResponse, Task
-
-
-@pytest.fixture(scope="module", name="domain_str")
-def _create_domain_str():
-    domain_str = """;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; 4 Op-blocks world
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (domain BLOCKS)
-  (:requirements :strips :typing)
-  (:types block)
-  (:predicates (on ?x - block ?y - block)
-	       (ontable ?x - block)
-	       (clear ?x - block)
-	       (handempty)
-	       (holding ?x - block)
-	       )
-  (:action pick-up
-	     :parameters (?x - block)
-	     :precondition (and (clear ?x) (ontable ?x) (handempty))
-	     :effect
-	     (and (not (ontable ?x))
-		   (not (clear ?x))
-		   (not (handempty))
-		   (holding ?x)))
-  (:action put-down
-	     :parameters (?x - block)
-	     :precondition (holding ?x)
-	     :effect
-	     (and (not (holding ?x))
-		   (clear ?x)
-		   (handempty)
-		   (ontable ?x)))
-  (:action stack
-	     :parameters (?x - block ?y - block)
-	     :precondition (and (holding ?x) (clear ?y))
-	     :effect
-	     (and (not (holding ?x))
-		   (not (clear ?y))
-		   (clear ?x)
-		   (handempty)
-		   (on ?x ?y)))
-  (:action unstack
-	     :parameters (?x - block ?y - block)
-	     :precondition (and (on ?x ?y) (clear ?x) (handempty))
-	     :effect
-	     (and (holding ?x)
-		   (clear ?y)
-		   (not (clear ?x))
-		   (not (handempty))
-		   (not (on ?x ?y)))))
-"""
-    return domain_str
-
-
-@pytest.fixture(scope="module", name="problem_str")
-def _create_problem_str():
-    problem_str = """(define (problem blocks)
-    (:domain blocks)
-    (:objects
-        d - block
-        b - block
-        a - block
-        c - block
-    )
-    (:init
-        (clear c)
-        (clear b)
-        (clear d)
-        (ontable c)
-        (ontable a)
-        (ontable d)
-        (on b a)
-        (handempty)
-    )
-    (:goal (and (holding a)))
-)
-"""
-    return problem_str
 
 
 class _ParrotLLM(LargeLanguageModel):
@@ -133,11 +56,7 @@ class _MockLLM(LargeLanguageModel):
                             stop_token,
                             num_completions=1):
         del prompt, temperature, seed, num_completions  # unused
-        if not self.responses:
-            return []
         next_response = self.responses.pop(0)
-        if stop_token in next_response:
-            next_response, _ = next_response.split(stop_token, 1)
         response = LLMResponse("", next_response, [], [], {}, {})
         return [response]
 
@@ -243,7 +162,24 @@ def test_openai_llm():
     assert llm_response.prompt_info["stop_token"] == stop_token
 
 
-def test_llm_planning_failure_cases(domain_str, problem_str):
+def test_llm_planning():
+    """Tests LLM planning."""
+    cache_dir = "_fake_llm_cache_dir"
+    utils.reset_flags({
+        "llm_cache_dir": cache_dir,
+        "llm_model_name": "code-davinci-002",  # should not matter for test
+        "llm_use_cache_only": False,
+    })
+    llm = _MockLLM()
+    tasks, _, _ = create_tasks("pyperplan-blocks", 1, 0, 0)
+    task = tasks[0]
+    ideal_plan, _ = utils.run_planning(task)
+    llm.responses = ["\n".join(ideal_plan)]
+    plan = run_llm_planning(task, llm, [(task, ideal_plan)])
+    assert plan == ideal_plan
+
+
+def test_llm_planning_failure_cases():
     """Tests failure cases of LLM planning."""
     cache_dir = "_fake_llm_cache_dir"
     utils.reset_flags({
@@ -252,7 +188,8 @@ def test_llm_planning_failure_cases(domain_str, problem_str):
         "llm_use_cache_only": False,
     })
     llm = _MockLLM()
-    task = Task(domain_str, problem_str)
+    tasks, _, _ = create_tasks("pyperplan-elevators", 1, 0, 0)
+    task = tasks[0]
     ideal_plan, _ = utils.run_planning(task)
     ideal_response = "\n".join(ideal_plan)
 
@@ -275,22 +212,27 @@ def test_llm_planning_failure_cases(domain_str, problem_str):
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan)
     # Case where object names are incorrect.
-    assert "(unstack b a)" in ideal_response
-    response = ideal_response.replace("(unstack b a)", "(unstack dummy a)")
+    assert "(move-up-fast fast0 n0 n8)" in ideal_response
+    response = ideal_response.replace("(move-up-fast fast0 n0 n8)",
+                                      "(move-up-fast dummy n0 n8)")
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan) - 1
     # Case where operator names are incorrect.
-    response = ideal_response.replace("(unstack b a)", "(unstack-dummy b a)")
+    response = ideal_response.replace("(move-up-fast fast0 n0 n8)",
+                                      "(dummy-move-up-fast fast0 n0 n8)")
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan) - 1
     # Cases where the type signature of the operator is wrong.
-    response = ideal_response.replace("(unstack b a)", "(unstack b)")
+    response = ideal_response.replace("(move-up-fast fast0 n0 n8)",
+                                      "(move-up-fast fast0 n0)")
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan) - 1
-    response = ideal_response.replace("(unstack b a)", "(unstack dummy a)")
+    response = ideal_response.replace("(move-up-fast fast0 n0 n8)",
+                                      "(move-up-fast n0 fast0 n8)")
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan) - 1
-    response = ideal_response.replace("(unstack b a)", "(unstack b a a)")
+    response = ideal_response.replace("(move-up-fast fast0 n0 n8)",
+                                      "(move-up-fast fast0 n0 n8 n8)")
     plan = _llm_response_to_plan(response, task)  # pylint: disable=protected-access
     assert len(plan) == len(ideal_plan) - 1
 
