@@ -19,6 +19,7 @@ def parse_flags() -> None:
     parser.add_argument("--llm_use_cache_only", action="store_true")
     parser.add_argument("--llm_model_name", default="code-davinci-002")
     parser.add_argument("--llm_max_total_tokens", default=4096, type=int)
+    parser.add_argument("--horizon", default=100, type=int)
     parser.add_argument('--debug',
                         action="store_const",
                         dest="loglevel",

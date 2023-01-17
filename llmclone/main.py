@@ -5,6 +5,8 @@ import sys
 import time
 from typing import List, Tuple
 
+from pg3.policy_search import learn_policy
+
 from llmclone import utils
 from llmclone.envs import create_tasks
 from llmclone.flags import FLAGS, parse_flags
@@ -28,6 +30,7 @@ def _main() -> None:
     logging.info(f"Git commit hash: {utils.get_git_commit_hash()}")
 
     # There are three sets of planning tasks: prompting, train, and eval.
+    logging.info("Generating tasks.")
     prompt_tasks, train_tasks, eval_tasks = create_tasks(
         env_name=FLAGS.env,
         num_prompt=FLAGS.num_prompt_tasks,
@@ -36,6 +39,7 @@ def _main() -> None:
     )
 
     # Create example plans for prompting.
+    logging.info("Creating demos for prompting.")
     prompt_demos: List[Tuple[Task, Plan]] = []
     for task in prompt_tasks:
         plan, _ = utils.run_planning(task, planner=FLAGS.planner)
@@ -44,6 +48,7 @@ def _main() -> None:
         prompt_demos.append(demo)
 
     # Get train and eval plans from LLM.
+    logging.info("Querying LLM to get train and eval demos.")
     llm = OpenAILLM(FLAGS.llm_model_name)
     train_demos: List[Tuple[Task, Plan]] = []
     eval_demos: List[Tuple[Task, Plan]] = []
@@ -56,8 +61,23 @@ def _main() -> None:
             demo_list.append(demo)
 
     # Use the LLM train plans to learn a policy by behavioral cloning.
+    logging.info("Using train demos to learn a policy.")
+    domain_str = train_demos[0][0].domain_str
+    problem_strs = []
+    demos = []
+    for task, plan in train_demos:
+        assert task.domain_str == domain_str
+        problem_strs.append(task.problem_str)
+        demos.append(plan)
+    policy_str = learn_policy(domain_str,
+                              problem_strs,
+                              FLAGS.horizon,
+                              heuristic_name="demo_plan_comparison",
+                              demos=demos)
+    del policy_str  # to be used soon
 
     # Evaluate the match between the policy and the LLM on the eval plans.
+    logging.info("Evaluating the learned policy on the eval demos.")
 
     script_time = time.time() - script_start
     logging.info(f"\n\nMain script terminated in {script_time:.5f} seconds")
