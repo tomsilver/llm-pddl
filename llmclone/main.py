@@ -69,15 +69,31 @@ def _main() -> None:
         assert task.domain_str == domain_str
         problem_strs.append(task.problem_str)
         demos.append(plan)
-    policy_str = learn_policy(domain_str,
+    policy = learn_policy(domain_str,
                               problem_strs,
                               FLAGS.horizon,
                               heuristic_name="demo_plan_comparison",
                               demos=demos)
-    del policy_str  # to be used soon
 
     # Evaluate the match between the policy and the LLM on the eval plans.
     logging.info("Evaluating the learned policy on the eval demos.")
+    num_steps = 0
+    num_matches = 0
+    for task, plan in eval_demos:
+        for action in plan:
+            # Stop comparing if this action is not applicable.
+            if not utils.action_is_valid_for_task(task, action):
+                break
+            num_steps += 1
+            # Check if this action matches the policy.
+            match = policy.satisfied(task.problem_str, action)
+            if match:
+                num_matches += 1
+            # Advance the task.
+            task = utils.advance_task(task, action)
+    accuracy = num_matches / num_steps
+    logging.info(f"Policy accuracy: {accuracy:.3f} ({num_matches}/{num_steps}")
+
 
     script_time = time.time() - script_start
     logging.info(f"\n\nMain script terminated in {script_time:.5f} seconds")
