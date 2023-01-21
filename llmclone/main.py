@@ -6,6 +6,7 @@ import time
 from typing import List, Tuple
 
 from pg3.policy_search import learn_policy
+from pg3.utils import policy_satisfied
 
 from llmclone import utils
 from llmclone.envs import create_tasks
@@ -69,11 +70,11 @@ def _main() -> None:
         assert task.domain_str == domain_str
         problem_strs.append(task.problem_str)
         demos.append(plan)
-    policy = learn_policy(domain_str,
-                          problem_strs,
-                          FLAGS.horizon,
-                          heuristic_name="demo_plan_comparison",
-                          demos=demos)
+    policy_str = learn_policy(domain_str,
+                              problem_strs,
+                              FLAGS.horizon,
+                              heuristic_name="demo_plan_comparison",
+                              demos=demos)
 
     # Evaluate the match between the policy and the LLM on the eval plans.
     logging.info("Evaluating the learned policy on the eval demos.")
@@ -86,7 +87,8 @@ def _main() -> None:
                 break
             num_steps += 1
             # Check if this action matches the policy.
-            match = policy.satisfied(task.problem_str, action)
+            match = policy_satisfied(policy_str, task.problem_str,
+                                     task.domain_str, action)
             if match:
                 num_matches += 1
             # Advance the task.
