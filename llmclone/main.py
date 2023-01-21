@@ -70,10 +70,10 @@ def _main() -> None:
         problem_strs.append(task.problem_str)
         demos.append(plan)
     policy = learn_policy(domain_str,
-                              problem_strs,
-                              FLAGS.horizon,
-                              heuristic_name="demo_plan_comparison",
-                              demos=demos)
+                          problem_strs,
+                          FLAGS.horizon,
+                          heuristic_name="demo_plan_comparison",
+                          demos=demos)
 
     # Evaluate the match between the policy and the LLM on the eval plans.
     logging.info("Evaluating the learned policy on the eval demos.")
@@ -93,7 +93,6 @@ def _main() -> None:
             task = utils.advance_task(task, action)
     accuracy = num_matches / num_steps
     logging.info(f"Policy accuracy: {accuracy:.3f} ({num_matches}/{num_steps}")
-
 
     script_time = time.time() - script_start
     logging.info(f"\n\nMain script terminated in {script_time:.5f} seconds")

@@ -1,11 +1,13 @@
 """Data structures."""
 
+import logging
 import tempfile
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List
 
+from pyperplan.grounding import ground as pyperplan_ground
 from pyperplan.pddl.parser import Parser
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
 from pyperplan.pddl.pddl import \
@@ -13,6 +15,7 @@ from pyperplan.pddl.pddl import \
 from pyperplan.pddl.pddl import Problem as PyperplanProblem
 from pyperplan.pddl.pddl import \
     Type as PyperplanType  # pylint: disable=unused-import
+from pyperplan.task import Task as PyperplanTask
 
 PyperplanObject = str
 
@@ -58,6 +61,14 @@ class Task:
         """A crude measure of task complexity."""
         prob = self.problem
         return len(prob.objects) + len(prob.initial_state) + len(prob.goal)
+
+    @cached_property
+    def pyperplan_task(self) -> PyperplanTask:
+        """The pyperplan task for this task."""
+        logging.disable(logging.ERROR)
+        pyperplan_task = pyperplan_ground(self.problem)
+        logging.disable(logging.NOTSET)
+        return pyperplan_task
 
 
 # A plan is currently just a list of strings, where each string is one ground

@@ -215,3 +215,16 @@ def reset_flags(args: Dict[str, Any], default_seed: int = 123) -> None:
     FLAGS.__dict__.update(args)
     if "seed" not in FLAGS:
         FLAGS.__dict__["seed"] = default_seed
+
+
+def action_is_valid_for_task(task: Task, action: str) -> bool:
+    """Check whether the action is valid in the task initial state."""
+    pyperplan_task = task.pyperplan_task
+    current_facts = pyperplan_task.initial_state
+    for op in pyperplan_task.operators:
+        if op.name == action:
+            action_op = op
+            break
+    else:
+        raise ValueError(f"Invalid action for task: {action}")
+    return action_op.applicable(current_facts)
