@@ -20,6 +20,11 @@ def parse_flags() -> None:
     parser.add_argument("--llm_model_name", default="code-davinci-002")
     parser.add_argument("--llm_max_total_tokens", default=4096, type=int)
     parser.add_argument("--horizon", default=100, type=int)
+    parser.add_argument("--pg3_search_method",
+                        default="hill_climbing",
+                        type=str)
+    parser.add_argument("--pg3_gbfs_max_expansions", default=100, type=int)
+    parser.add_argument("--pg3_hc_enforced_depth", default=0, type=int)
     parser.add_argument('--debug',
                         action="store_const",
                         dest="loglevel",

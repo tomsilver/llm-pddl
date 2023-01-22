@@ -70,11 +70,15 @@ def _main() -> None:
         assert task.domain_str == domain_str
         problem_strs.append(task.problem_str)
         demos.append(plan)
-    policy_str = learn_policy(domain_str,
-                              problem_strs,
-                              FLAGS.horizon,
-                              heuristic_name="demo_plan_comparison",
-                              demos=demos)
+    policy_str = learn_policy(
+        domain_str,
+        problem_strs,
+        FLAGS.horizon,
+        heuristic_name="demo_plan_comparison",
+        demos=demos,
+        search_method=FLAGS.pg3_search_method,
+        gbfs_max_expansions=FLAGS.pg3_gbfs_max_expansions,
+        hc_enforced_depth=FLAGS.pg3_hc_enforced_depth)
     logging.info(f"Learned policy:\n{policy_str}")
 
     # Evaluate the match between the policy and the LLM on the eval plans.
