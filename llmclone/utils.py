@@ -15,8 +15,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
 
 from llmclone.flags import FLAGS
-from llmclone.structs import Plan, PyperplanObject, PyperplanPredicate, \
-    PyperplanType, Task, TaskMetrics
+from llmclone.structs import Plan, PyperplanObject, PyperplanOperator, \
+    PyperplanPredicate, PyperplanType, Task, TaskMetrics
 
 # Global constants.
 LLM_QUESTION_TOKEN = "Q:"
@@ -247,28 +247,29 @@ def reset_flags(args: Dict[str, Any], default_seed: int = 123) -> None:
         FLAGS.__dict__["seed"] = default_seed
 
 
-def action_is_valid_for_task(task: Task, action: str) -> bool:
-    """Check whether the action is valid in the task initial state."""
+def action_to_task_operator(task: Task, action: str) -> PyperplanOperator:
+    """Look up operator for action and raise ValueError if not found."""
     pyperplan_task = task.pyperplan_task
-    current_facts = pyperplan_task.initial_state
     for op in pyperplan_task.operators:
         if op.name == action:
             action_op = op
             break
-    else:
+    else:  # pragma: no cover
         raise ValueError(f"Invalid action for task: {action}")
+    return action_op
+
+
+def action_is_valid_for_task(task: Task, action: str) -> bool:
+    """Check whether the action is valid in the task initial state."""
+    pyperplan_task = task.pyperplan_task
+    current_facts = pyperplan_task.initial_state
+    action_op = action_to_task_operator(task, action)
     return action_op.applicable(current_facts)
 
 
 def advance_task(task: Task, action: str) -> Task:
     """Create a new task with a new initial state."""
-    pyperplan_task = task.pyperplan_task
-    for op in pyperplan_task.operators:
-        if op.name == action:
-            action_op = op
-            break
-    else:
-        raise ValueError(f"Invalid action for task: {action}")
+    action_op = action_to_task_operator(task, action)
     objects_str = get_objects_str(task, include_constants=False)
     init_strs = set(get_init_strs(task))
     init_strs = (init_strs - action_op.del_effects) | action_op.add_effects

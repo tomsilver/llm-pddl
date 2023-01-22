@@ -81,18 +81,18 @@ def _main() -> None:
     num_steps = 0
     num_matches = 0
     for task, plan in eval_demos:
-        for action in plan:
+        for a in plan:
             # Stop comparing if this action is not applicable.
-            if not utils.action_is_valid_for_task(task, action):
+            if not utils.action_is_valid_for_task(task, a):  # pragma: no cover
                 break
             num_steps += 1
             # Check if this action matches the policy.
             match = policy_satisfied(policy_str, task.problem_str,
-                                     task.domain_str, action)
+                                     task.domain_str, a)
             if match:
                 num_matches += 1
             # Advance the task.
-            task = utils.advance_task(task, action)
+            task = utils.advance_task(task, a)
     acc = num_matches / num_steps
     logging.info(f"\nPolicy accuracy: {acc:.3f} ({num_matches}/{num_steps})")
 

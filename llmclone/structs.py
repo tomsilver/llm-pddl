@@ -15,6 +15,8 @@ from pyperplan.pddl.pddl import \
 from pyperplan.pddl.pddl import Problem as PyperplanProblem
 from pyperplan.pddl.pddl import \
     Type as PyperplanType  # pylint: disable=unused-import
+from pyperplan.task import \
+    Operator as PyperplanOperator  # pylint: disable=unused-import
 from pyperplan.task import Task as PyperplanTask
 
 PyperplanObject = str
