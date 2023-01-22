@@ -13,8 +13,7 @@ from transformers import GPT2TokenizerFast
 
 from llmclone import utils
 from llmclone.flags import FLAGS
-from llmclone.structs import LLMResponse, Plan, PyperplanObject, \
-    PyperplanType, Task
+from llmclone.structs import LLMResponse, Plan, Task
 
 # Turn off a warning about parallelism.
 # See https://stackoverflow.com/questions/62691279
@@ -208,33 +207,14 @@ def _create_llm_planning_prompt_prefix(
 
 
 def _create_single_prompt(task: Task, plan: Optional[Plan] = None) -> str:
-    # Create the objects string.
-    type_to_objs: Dict[PyperplanType, List[PyperplanObject]] = {
-        t: []
-        for t in task.domain.types.values()
-    }
-    for obj in sorted(task.problem.objects):
-        obj_type = task.problem.objects[obj]
-        type_to_objs[obj_type].append(obj)
-    # Include constants too.
-    for obj in sorted(task.domain.constants):  # pragma: no cover
-        obj_type = task.domain.constants[obj]
-        type_to_objs[obj_type].append(obj)
-    # Construct the object list for the prompt.
-    objects_strs: List[str] = []
-    for typ, objs in type_to_objs.items():
-        if not objs:
-            continue
-        typ_str = " ".join(objs) + " - " + str(typ)
-        objects_strs.append(typ_str)
-    # Create the objects string.
-    objects_str = "\n  ".join(objects_strs)
     # Create the solution string.
     if plan is None:  # for the new task that the LLM is trying to solve
         solution_str = utils.LLM_ANSWER_TOKEN
     else:
         plan_str = "\n  ".join(plan)
         solution_str = utils.LLM_ANSWER_TOKEN + "\n" + plan_str
+    # Create the objects string.
+    objects_str = utils.get_objects_str(task, include_constants=True)
     # Create the init string.
     init_str = utils.get_init_str(task)
     # Create the goal string.

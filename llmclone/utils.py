@@ -10,13 +10,13 @@ import tempfile
 import urllib.request
 from datetime import date
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pyperplan.planner import HEURISTICS, SEARCHES, search_plan
 
 from llmclone.flags import FLAGS
-from llmclone.structs import Plan, PyperplanPredicate, PyperplanType, Task, \
-    TaskMetrics
+from llmclone.structs import Plan, PyperplanObject, PyperplanOperator, \
+    PyperplanPredicate, PyperplanType, Task, TaskMetrics
 
 # Global constants.
 LLM_QUESTION_TOKEN = "Q:"
@@ -169,11 +169,41 @@ def pred_to_str(pred: PyperplanPredicate) -> str:
     return f"({pred.name} {arg_str})"
 
 
+def get_objects_str(task: Task, include_constants: bool = False) -> str:
+    """Returns a PDDL encoding of the objects in the task."""
+    # Create the objects string.
+    type_to_objs: Dict[PyperplanType, List[PyperplanObject]] = {
+        t: []
+        for t in task.domain.types.values()
+    }
+    for obj in sorted(task.problem.objects):
+        obj_type = task.problem.objects[obj]
+        type_to_objs[obj_type].append(obj)
+    # Include constants too.
+    if include_constants:
+        for obj in sorted(task.domain.constants):  # pragma: no cover
+            obj_type = task.domain.constants[obj]
+            type_to_objs[obj_type].append(obj)
+    # Construct the object list for the prompt.
+    objects_strs: List[str] = []
+    for typ, objs in type_to_objs.items():
+        if not objs:
+            continue
+        typ_str = " ".join(objs) + " - " + str(typ)
+        objects_strs.append(typ_str)
+    return "\n  ".join(objects_strs)
+
+
+def get_init_strs(task: Task) -> List[str]:
+    """Returns the init strings of a PDDL task."""
+    init_strs = [pred_to_str(p) for p in task.problem.initial_state]
+    return init_strs
+
+
 def get_init_str(task: Task) -> str:
     """Returns the init string of a PDDL task."""
-    init_strs = [pred_to_str(p) for p in task.problem.initial_state]
-    init_str = "\n".join(init_strs)
-    return init_str
+    init_strs = get_init_strs(task)
+    return "\n".join(init_strs)
 
 
 def get_goal_str(task: Task) -> str:
@@ -215,3 +245,47 @@ def reset_flags(args: Dict[str, Any], default_seed: int = 123) -> None:
     FLAGS.__dict__.update(args)
     if "seed" not in FLAGS:
         FLAGS.__dict__["seed"] = default_seed
+
+
+def action_to_task_operator(task: Task, action: str) -> PyperplanOperator:
+    """Look up operator for action and raise ValueError if not found."""
+    pyperplan_task = task.pyperplan_task
+    for op in pyperplan_task.operators:
+        if op.name == action:
+            action_op = op
+            break
+    else:  # pragma: no cover
+        raise ValueError(f"Invalid action for task: {action}")
+    return action_op
+
+
+def action_is_valid_for_task(task: Task, action: str) -> bool:
+    """Check whether the action is valid in the task initial state."""
+    pyperplan_task = task.pyperplan_task
+    current_facts = pyperplan_task.initial_state
+    action_op = action_to_task_operator(task, action)
+    return action_op.applicable(current_facts)
+
+
+def advance_task(task: Task, action: str) -> Task:
+    """Create a new task with a new initial state."""
+    action_op = action_to_task_operator(task, action)
+    objects_str = get_objects_str(task, include_constants=False)
+    init_strs = set(get_init_strs(task))
+    init_strs = (init_strs - action_op.del_effects) | action_op.add_effects
+    init_str = "\n  ".join(sorted(init_strs))
+    goal_str = get_goal_str(task)
+    new_problem_str = f"""(define (problem synthetic-problem)
+   (:domain {task.domain.name})
+  (:objects
+  {objects_str}
+  )
+  (:init
+  {init_str}
+  )
+  (:goal
+  {goal_str}
+  )
+)"""
+    new_task = Task(task.domain_str, new_problem_str)
+    return new_task
