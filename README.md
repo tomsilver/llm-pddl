@@ -18,6 +18,8 @@ Under development.
   - `source venv/bin/activate`
 - Clone this repository with submodules: `git clone https://github.com/tomsilver/llm-pddl`
 - Run `pip install -e .[develop]` to install the main dependencies for development.
+- Install [Fast Downward](https://www.fast-downward.org/ObtainingAndRunningFastDownward) and `export FD_EXEC_PATH="<your absolute path here>/downward"`
+- Obtain an API key from OpenAI for Codex access and `export OPENAI_API_KEY=<your API key>`
 
 ### Developing
 

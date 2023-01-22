@@ -75,6 +75,7 @@ def _main() -> None:
                               FLAGS.horizon,
                               heuristic_name="demo_plan_comparison",
                               demos=demos)
+    logging.info(f"Learned policy:\n{policy_str}")
 
     # Evaluate the match between the policy and the LLM on the eval plans.
     logging.info("Evaluating the learned policy on the eval demos.")
