@@ -12,7 +12,7 @@ def parse_flags() -> None:
     parser.add_argument("--env", required=True, type=str)
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--num_prompt_tasks", default=2, type=int)
-    parser.add_argument("--num_train_tasks", default=2, type=int)
+    parser.add_argument("--num_train_tasks", default=5, type=int)
     parser.add_argument("--num_eval_tasks", default=10, type=int)
     parser.add_argument("--planner", default="pyperplan")
     parser.add_argument("--llm_cache_dir", default="llm_cache", type=str)
