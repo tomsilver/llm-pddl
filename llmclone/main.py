@@ -93,8 +93,8 @@ def _main() -> None:
                 num_matches += 1
             # Advance the task.
             task = utils.advance_task(task, action)
-    accuracy = num_matches / num_steps
-    logging.info(f"Policy accuracy: {accuracy:.3f} ({num_matches}/{num_steps}")
+    acc = num_matches / num_steps
+    logging.info(f"\nPolicy accuracy: {acc:.3f} ({num_matches}/{num_steps})")
 
     script_time = time.time() - script_start
     logging.info(f"\n\nMain script terminated in {script_time:.5f} seconds")
