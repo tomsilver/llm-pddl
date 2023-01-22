@@ -74,6 +74,7 @@ def _main() -> None:
         domain_str,
         problem_strs,
         FLAGS.horizon,
+        max_rule_params=FLAGS.pg3_max_rule_params,
         heuristic_name="demo_plan_comparison",
         demos=demos,
         search_method=FLAGS.pg3_search_method,
